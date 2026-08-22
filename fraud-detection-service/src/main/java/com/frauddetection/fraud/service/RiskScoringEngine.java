@@ -1,5 +1,6 @@
 package com.frauddetection.fraud.service;
 
+import com.frauddetection.fraud.client.PaymentServiceClient;
 import com.frauddetection.fraud.dto.PaymentEventDTO;
 import com.frauddetection.fraud.dto.RiskAssessmentDTO;
 import com.frauddetection.fraud.model.RiskLevel;
@@ -20,7 +21,7 @@ import java.util.List;
 @Slf4j
 public class RiskScoringEngine {
     private final FraudAlertRepository fraudAlertRepository;
-
+    private final PaymentServiceClient paymentServiceClient;
     @Value("${fraud.rules.high-amount-threshold}")
     private double highAmountThreshold;
 
@@ -103,6 +104,42 @@ public class RiskScoringEngine {
             );
         }
 
+        // Rule 7 — Historical amount anomaly
+        if (event.getAmount() != null) {
+            Double historicalAverage = getHistoricalAverageAmount(event);
+
+            if (historicalAverage != null &&
+                    event.getAmount().doubleValue() >= historicalAverage * 3) {
+
+                riskScore += 20.0;
+
+                riskReasons.add(
+                        String.format(
+                                "Transaction amount is unusually high compared with "
+                                        + "sender history: current %.2f vs historical "
+                                        + "average %.2f",
+                                event.getAmount().doubleValue(),
+                                historicalAverage
+                        )
+                );
+            }
+        }
+
+        // Rule 8 — Recent rejected payment attempts
+        long recentRejectedPaymentCount =
+                getRecentRejectedPaymentCount(event);
+
+        if (recentRejectedPaymentCount >= 5) {
+            riskScore += 25.0;
+
+            riskReasons.add(
+                    "Multiple rejected payment attempts: "
+                            + recentRejectedPaymentCount
+                            + " rejected transactions from the sender "
+                            + "in the last 10 minutes"
+            );
+        }
+
         // Cap at 100
         riskScore = Math.min(riskScore, 100.0);
 
@@ -146,10 +183,47 @@ public class RiskScoringEngine {
                 windowStart
         );
     }
+
+    private long getRecentRejectedPaymentCount(PaymentEventDTO event) {
+        if (event.getSenderId() == null ||
+                event.getSenderId().isBlank() ||
+                event.getCreatedAt() == null) {
+            return 0;
+        }
+
+        LocalDateTime windowStart =
+                event.getCreatedAt().minusMinutes(10);
+
+        return paymentServiceClient.countRejectedPayments(
+                event.getSenderId(),
+                windowStart
+        );
+    }
+
     private RiskLevel determineRiskLevel(double score) {
         if (score >= 70.0) return RiskLevel.CRITICAL;
         if (score >= 40.0) return RiskLevel.HIGH;
         if (score >= 20.0) return RiskLevel.MEDIUM;
         return RiskLevel.LOW;
+    }
+
+    private Double getHistoricalAverageAmount(PaymentEventDTO event) {
+        if (event.getSenderId() == null ||
+                event.getSenderId().isBlank()) {
+            return null;
+        }
+
+        long transactionCount =
+                fraudAlertRepository.countTransactionsBySender(
+                        event.getSenderId()
+                );
+
+        if (transactionCount < 3) {
+            return null;
+        }
+
+        return fraudAlertRepository.findAverageTransactionAmountBySender(
+                event.getSenderId()
+        );
     }
 }

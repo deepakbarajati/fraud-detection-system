@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,4 +103,18 @@ public class PaymentService {
                 .message(message)
                 .build();
     }
+
+
+    public long countPaymentsBySenderAndStatusSince(
+            String senderId,
+            PaymentStatus status,
+            LocalDateTime since) {
+
+        return paymentRepository.countPaymentsBySenderAndStatusSince(
+                senderId,
+                status,
+                since
+        );
+    }
+
 }

@@ -27,4 +27,14 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
             "AND p.createdAt >= :since")
     BigDecimal sumRecentAmountBySender(@Param("senderId") String senderId,
                                        @Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(p) FROM Payment p " +
+            "WHERE p.senderId = :senderId " +
+            "AND p.status = :status " +
+            "AND p.createdAt >= :since")
+    long countPaymentsBySenderAndStatusSince(
+            @Param("senderId") String senderId,
+            @Param("status") PaymentStatus status,
+            @Param("since") LocalDateTime since
+    );
 }

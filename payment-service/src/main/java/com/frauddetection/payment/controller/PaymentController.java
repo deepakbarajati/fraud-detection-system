@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -67,4 +68,22 @@ public class PaymentController {
             @RequestParam PaymentStatus status) {
         return ResponseEntity.ok(paymentService.updatePaymentStatus(paymentId, status));
     }
+
+
+    @GetMapping("/sender/{senderId}/failed-count")
+    @Operation(summary = "Count rejected payments for a sender")
+    public ResponseEntity<Long> countRejectedPayments(
+            @PathVariable String senderId,
+            @RequestParam LocalDateTime since) {
+
+        long count = paymentService.countPaymentsBySenderAndStatusSince(
+                senderId,
+                PaymentStatus.REJECTED,
+                since
+        );
+
+        return ResponseEntity.ok(count);
+    }
+
+
 }

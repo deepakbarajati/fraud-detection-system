@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.LocalDateTime;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +35,36 @@ public class PaymentServiceClient {
                     .subscribe();
         } catch (Exception e) {
             log.error("Error calling payment service: {}", e.getMessage());
+        }
+    }
+
+
+    public long countRejectedPayments(
+            String senderId,
+            LocalDateTime since) {
+
+        try {
+            Long count = webClientBuilder.build()
+                    .get()
+                    .uri(paymentServiceUrl +
+                                    "/api/v1/payments/sender/{senderId}/failed-count" +
+                                    "?since={since}",
+                            senderId,
+                            since)
+                    .retrieve()
+                    .bodyToMono(Long.class)
+                    .block();
+
+            return count != null ? count : 0;
+
+        } catch (Exception e) {
+            log.error(
+                    "Failed to get rejected payment count for sender {}: {}",
+                    senderId,
+                    e.getMessage()
+            );
+
+            return 0;
         }
     }
 }
