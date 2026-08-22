@@ -32,4 +32,14 @@ public interface FraudAlertRepository extends JpaRepository<FraudAlert, String> 
             "AND f.createdAt >= :since")
     long countRecentTransactionsBySender(@Param("senderId") String senderId,
                                          @Param("since") LocalDateTime since);
+
+
+    @Query("SELECT AVG(f.amount) FROM FraudAlert f " +
+            "WHERE f.senderId = :senderId")
+    Double findAverageTransactionAmountBySender(
+            @Param("senderId") String senderId
+    );
+
+    @Query("SELECT COUNT(f) FROM FraudAlert f WHERE f.senderId = :senderId")
+    long countTransactionsBySender(@Param("senderId") String senderId);
 }

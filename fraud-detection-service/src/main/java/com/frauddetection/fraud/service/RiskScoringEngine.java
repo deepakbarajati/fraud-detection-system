@@ -103,6 +103,27 @@ public class RiskScoringEngine {
             );
         }
 
+        // Rule 7 — Historical amount anomaly
+        if (event.getAmount() != null) {
+            Double historicalAverage = getHistoricalAverageAmount(event);
+
+            if (historicalAverage != null &&
+                    event.getAmount().doubleValue() >= historicalAverage * 3) {
+
+                riskScore += 20.0;
+
+                riskReasons.add(
+                        String.format(
+                                "Transaction amount is unusually high compared with "
+                                        + "sender history: current %.2f vs historical "
+                                        + "average %.2f",
+                                event.getAmount().doubleValue(),
+                                historicalAverage
+                        )
+                );
+            }
+        }
+
         // Cap at 100
         riskScore = Math.min(riskScore, 100.0);
 
@@ -146,10 +167,31 @@ public class RiskScoringEngine {
                 windowStart
         );
     }
+
     private RiskLevel determineRiskLevel(double score) {
         if (score >= 70.0) return RiskLevel.CRITICAL;
         if (score >= 40.0) return RiskLevel.HIGH;
         if (score >= 20.0) return RiskLevel.MEDIUM;
         return RiskLevel.LOW;
+    }
+
+    private Double getHistoricalAverageAmount(PaymentEventDTO event) {
+        if (event.getSenderId() == null ||
+                event.getSenderId().isBlank()) {
+            return null;
+        }
+
+        long transactionCount =
+                fraudAlertRepository.countTransactionsBySender(
+                        event.getSenderId()
+                );
+
+        if (transactionCount < 3) {
+            return null;
+        }
+
+        return fraudAlertRepository.findAverageTransactionAmountBySender(
+                event.getSenderId()
+        );
     }
 }
