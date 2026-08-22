@@ -49,6 +49,7 @@ public class RiskScoringEngine {
         if (event.getIpAddress() != null) {
             boolean suspiciousIp = SUSPICIOUS_IP_PREFIXES.stream()
                     .anyMatch(prefix -> event.getIpAddress().startsWith(prefix));
+
             if (suspiciousIp) {
                 riskScore += 30.0;
                 riskReasons.add("Transaction originated from suspicious IP: "
@@ -60,7 +61,8 @@ public class RiskScoringEngine {
         if (event.getDeviceId() != null &&
                 event.getDeviceId().toLowerCase().contains("unknown")) {
             riskScore += 20.0;
-            riskReasons.add("Transaction from unknown device: " + event.getDeviceId());
+            riskReasons.add("Transaction from unknown device: "
+                    + event.getDeviceId());
         }
 
         // Rule 4 — Same sender/receiver check
@@ -68,6 +70,15 @@ public class RiskScoringEngine {
                 event.getSenderId().equals(event.getReceiverId())) {
             riskScore += 50.0;
             riskReasons.add("Sender and receiver are the same account");
+        }
+
+        // Rule 5 — Unusual transaction time
+        if (isUnusualTransactionTime(event)) {
+            riskScore += 10.0;
+            riskReasons.add(
+                    "Transaction occurred during an unusual time window: "
+                            + event.getCreatedAt().toLocalTime()
+            );
         }
 
         // Cap at 100
@@ -86,6 +97,17 @@ public class RiskScoringEngine {
                 .riskReasons(riskReasons)
                 .requiresAiAnalysis(requiresAiAnalysis)
                 .build();
+    }
+
+    private boolean isUnusualTransactionTime(PaymentEventDTO event) {
+        if (event.getCreatedAt() == null) {
+            return false;
+        }
+
+        int hour = event.getCreatedAt().getHour();
+
+        // Treat transactions between 1 AM and 5 AM as unusual.
+        return hour >= 1 && hour < 5;
     }
 
     private RiskLevel determineRiskLevel(double score) {
