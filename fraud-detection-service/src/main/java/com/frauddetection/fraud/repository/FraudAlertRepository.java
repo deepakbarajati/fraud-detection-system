@@ -27,4 +27,9 @@ public interface FraudAlertRepository extends JpaRepository<FraudAlert, String> 
             "AND f.createdAt >= :since AND f.riskLevel IN ('HIGH', 'CRITICAL')")
     long countHighRiskAlertsBySender(@Param("senderId") String senderId,
                                      @Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(f) FROM FraudAlert f WHERE f.senderId = :senderId " +
+            "AND f.createdAt >= :since")
+    long countRecentTransactionsBySender(@Param("senderId") String senderId,
+                                         @Param("since") LocalDateTime since);
 }

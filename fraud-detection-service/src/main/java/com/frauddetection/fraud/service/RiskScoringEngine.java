@@ -3,6 +3,10 @@ package com.frauddetection.fraud.service;
 import com.frauddetection.fraud.dto.PaymentEventDTO;
 import com.frauddetection.fraud.dto.RiskAssessmentDTO;
 import com.frauddetection.fraud.model.RiskLevel;
+import com.frauddetection.fraud.repository.FraudAlertRepository;
+import java.time.LocalDateTime;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,9 +15,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 @Component
 @Slf4j
 public class RiskScoringEngine {
+    private final FraudAlertRepository fraudAlertRepository;
 
     @Value("${fraud.rules.high-amount-threshold}")
     private double highAmountThreshold;
@@ -85,6 +91,18 @@ public class RiskScoringEngine {
             );
         }
 
+        // Rule 6 — Transaction velocity
+        long recentTransactionCount = getRecentTransactionCount(event);
+
+        if (recentTransactionCount >= 5) {
+            riskScore += 20.0;
+            riskReasons.add(
+                    "High transaction velocity: "
+                            + recentTransactionCount
+                            + " transactions from the sender in the last 10 minutes"
+            );
+        }
+
         // Cap at 100
         riskScore = Math.min(riskScore, 100.0);
 
@@ -114,6 +132,20 @@ public class RiskScoringEngine {
         return hour >= 1 && hour < 5;
     }
 
+    private long getRecentTransactionCount(PaymentEventDTO event) {
+        if (event.getSenderId() == null ||
+                event.getSenderId().isBlank() ||
+                event.getCreatedAt() == null) {
+            return 0;
+        }
+
+        LocalDateTime windowStart = event.getCreatedAt().minusMinutes(10);
+
+        return fraudAlertRepository.countRecentTransactionsBySender(
+                event.getSenderId(),
+                windowStart
+        );
+    }
     private RiskLevel determineRiskLevel(double score) {
         if (score >= 70.0) return RiskLevel.CRITICAL;
         if (score >= 40.0) return RiskLevel.HIGH;
