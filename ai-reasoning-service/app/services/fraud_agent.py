@@ -26,6 +26,10 @@ class AgentState(TypedDict):
     explanation: str
     recommended_action: str
     confidence: float
+
+    summary: str
+    reasons: List[str]
+
     reasoning_steps: List[str]
 
 class FraudAgent:
@@ -74,12 +78,20 @@ class FraudAgent:
         This is a HIGH/CRITICAL risk transaction requiring deep investigation.
         Respond ONLY with raw JSON, no markdown, no code blocks:
         {{
-            "decision": "REJECT or REVIEW",
-            "explanation": "detailed analysis",
-            "recommended_action": "specific action",
-            "confidence": 0.95,
-            "additional_steps": ["step1", "step2"]
-        }}"""
+             "summary": "concise risk investigation summary",
+             "reasons": [
+                 "reason 1",
+                 "reason 2"
+             ],
+             "decision": "REVIEW",
+             "explanation": "detailed investigation explanation",
+             "recommended_action": "specific action to take",
+             "confidence": 0.95,
+             "additional_steps": [
+                 "step1",
+                 "step2"
+             ]
+         }}"""
 
         try:
             response = self.llm.invoke([HumanMessage(content=prompt)])
@@ -96,6 +108,14 @@ class FraudAgent:
 
             return {
                 **state,
+                "summary": result.get(
+                    "summary",
+                    "High-risk transaction requires further investigation."
+                ),
+                "reasons": result.get(
+                    "reasons",
+                    state["risk_reasons"]
+                ),
                 "decision": result.get("decision", "REVIEW"),
                 "explanation": result.get("explanation", ""),
                 "recommended_action": result.get("recommended_action", ""),
@@ -106,13 +126,26 @@ class FraudAgent:
         except Exception as e:
             logger.error(f"Deep analysis failed: {str(e)}")
             steps.append(f"Deep analysis error: {str(e)}")
-            return {**state,
-                    "decision": "REVIEW",
-                    "explanation": f"Deep analysis error: {str(e)}",
-                    "recommended_action": "Manual review required",
-                    "confidence": 0.0,
-                    "reasoning_steps": steps,
-                    "analysis_complete": True}
+
+            return {
+                **state,
+                "summary": (
+                    "AI investigation was unavailable. "
+                    "The deterministic risk engine identified this "
+                    "transaction as high risk and it requires manual review."
+                ),
+                "reasons": state["risk_reasons"],
+                "decision": "REVIEW",
+                "explanation": (
+                    "The transaction was escalated for deep investigation, "
+                    "but the AI reasoning service was unavailable. "
+                    "The deterministic risk signals remain the source of truth."
+                ),
+                "recommended_action": "Manual review required",
+                "confidence": 0.0,
+                "reasoning_steps": steps,
+                "analysis_complete": True
+            }
 
     def _standard_analysis_node(self, state: AgentState) -> AgentState:
         logger.info(f"Agent: standard analysis for payment {state['payment_id']}")
@@ -127,11 +160,15 @@ class FraudAgent:
         
         Respond ONLY with raw JSON, no markdown, no code blocks:
         {{
-            "decision": "APPROVE or REVIEW",
-            "explanation": "brief analysis",
-            "recommended_action": "action to take",
-            "confidence": 0.9
-        }}"""
+             "summary": "concise investigation summary",
+             "reasons": [
+                 "reason 1"
+             ],
+             "decision": "APPROVE or REVIEW",
+             "explanation": "brief investigation explanation",
+             "recommended_action": "action to take",
+             "confidence": 0.9
+         }}"""
 
         try:
             response = self.llm.invoke([HumanMessage(content=prompt)])
@@ -147,6 +184,14 @@ class FraudAgent:
 
             return {
                 **state,
+                "summary": result.get(
+                    "summary",
+                    "No significant additional risk was identified."
+                ),
+                "reasons": result.get(
+                    "reasons",
+                    state["risk_reasons"]
+                ),
                 "decision": result.get("decision", "APPROVE"),
                 "explanation": result.get("explanation", ""),
                 "recommended_action": result.get("recommended_action", ""),
@@ -157,13 +202,26 @@ class FraudAgent:
         except Exception as e:
             logger.error(f"Standard analysis failed: {str(e)}")
             steps.append(f"Standard analysis error: {str(e)}")
-            return {**state,
-                    "decision": "APPROVE",
-                    "explanation": "Low risk transaction approved",
-                    "recommended_action": "Process payment normally",
-                    "confidence": 0.7,
-                    "reasoning_steps": steps,
-                    "analysis_complete": True}
+
+            return {
+                **state,
+                "summary": (
+                    "AI investigation was unavailable. "
+                    "The deterministic risk engine did not identify "
+                    "significant additional risk."
+                ),
+                "reasons": state["risk_reasons"],
+                "decision": "APPROVE",
+                "explanation": (
+                    "The AI investigation service was unavailable, "
+                    "so the decision is based on the deterministic "
+                    "risk assessment."
+                ),
+                "recommended_action": "Process payment normally",
+                "confidence": 0.0,
+                "reasoning_steps": steps,
+                "analysis_complete": True
+            }
 
     def _should_escalate(self, state: AgentState) -> str:
         return "deep_analysis" if state.get("needs_escalation") else "standard_analysis"
@@ -211,6 +269,10 @@ class FraudAgent:
             explanation="",
             recommended_action="",
             confidence=0.0,
+
+            summary="",
+            reasons=[],
+
             reasoning_steps=[]
         )
 
@@ -218,11 +280,18 @@ class FraudAgent:
 
         return FraudAnalysisResponse(
             payment_id=request.payment_id,
+
+            # These remain the deterministic risk engine's values.
             risk_level=request.risk_level,
             risk_score=request.risk_score,
+
+            # These are produced by the AI investigator.
+            summary=final_state["summary"],
+            reasons=final_state["reasons"],
             decision=final_state["decision"],
             explanation=final_state["explanation"],
             recommended_action=final_state["recommended_action"],
             confidence=final_state["confidence"],
+
             reasoning_steps=final_state["reasoning_steps"]
         )

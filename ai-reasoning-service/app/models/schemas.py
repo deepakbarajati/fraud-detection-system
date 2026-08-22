@@ -24,10 +24,15 @@ class FraudAnalysisResponse(BaseModel):
     payment_id: str
     risk_level: RiskLevel
     risk_score: float
+
+    summary: str
+    reasons: List[str]
+
     decision: str
     explanation: str
     recommended_action: str
     confidence: float
+
     reasoning_steps: List[str]
 
 class AgentState(BaseModel):
