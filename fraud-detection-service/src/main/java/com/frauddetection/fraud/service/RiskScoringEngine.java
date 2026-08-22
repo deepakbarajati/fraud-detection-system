@@ -57,12 +57,16 @@ public class RiskScoringEngine {
             }
         }
 
-        // Rule 3 — Unknown device check
-        if (event.getDeviceId() != null &&
+        // Rule 3 — Unknown/missing device check
+        if (event.getDeviceId() == null ||
+                event.getDeviceId().isBlank() ||
                 event.getDeviceId().toLowerCase().contains("unknown")) {
+
             riskScore += 20.0;
-            riskReasons.add("Transaction from unknown device: "
-                    + event.getDeviceId());
+
+            riskReasons.add(
+                    "Transaction originated from an unknown or missing device"
+            );
         }
 
         // Rule 4 — Same sender/receiver check
