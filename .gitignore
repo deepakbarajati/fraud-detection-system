@@ -23,3 +23,19 @@
 hs_err_pid*
 replay_pid*
 .idea/
+
+# React / Vite
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+.env.*
+!.env.example
