@@ -1100,3 +1100,100 @@ tr:hover td {
 .table-risk-fill.critical {
   background: #ef4444;
 }
+/* ================================
+   Investigation Intelligence
+   ================================ */
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.section-subtitle {
+  margin: 4px 0 0;
+  color: #8b93a7;
+  font-size: 11px;
+}
+
+.recommendation-box {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid #303747;
+  border-radius: 8px;
+  background: #151922;
+}
+
+.recommendation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.recommendation-title span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.recommendation-title strong {
+  font-size: 12px;
+}
+
+.recommendation-box p {
+  margin: 0;
+  color: #aeb6c7;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.recommendation-box.critical {
+  border-color: #5a3036;
+  background: #21171b;
+}
+
+.recommendation-box.critical
+.recommendation-title span {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.recommendation-box.high {
+  border-color: #5b3b24;
+  background: #211b16;
+}
+
+.recommendation-box.high
+.recommendation-title span {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.recommendation-box.medium {
+  border-color: #51481f;
+  background: #211f16;
+}
+
+.recommendation-box.medium
+.recommendation-title span {
+  background: #eab308;
+  color: #111827;
+}
+
+.recommendation-box.low {
+  border-color: #245337;
+  background: #152019;
+}
+
+.recommendation-box.low
+.recommendation-title span {
+  background: #22c55e;
+  color: #ffffff;
+}
