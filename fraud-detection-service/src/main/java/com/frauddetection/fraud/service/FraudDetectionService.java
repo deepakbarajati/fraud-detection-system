@@ -98,6 +98,15 @@ public class FraudDetectionService {
 
         AlertStatus oldStatus = alert.getStatus();
 
+        if (oldStatus == AlertStatus.RESOLVED ||
+                oldStatus == AlertStatus.FALSE_POSITIVE) {
+
+            throw new IllegalStateException(
+                    "Closed fraud alerts cannot be modified. Current status: "
+                            + oldStatus
+            );
+        }
+
         alert.setStatus(newStatus);
 
         FraudAlert updated = fraudAlertRepository.save(alert);
