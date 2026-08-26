@@ -23,5 +23,7 @@ public class FraudAlertResponseDTO {
     private AlertStatus status;
     private String riskReasons;
     private String aiExplanation;
+    private String ipAddress;
+    private String deviceId;
     private String createdAt;
 }
