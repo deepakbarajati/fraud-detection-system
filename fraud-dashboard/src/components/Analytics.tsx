@@ -43,118 +43,199 @@ function Analytics({ alerts }: AnalyticsProps) {
     value: alerts.filter((alert) => alert.status === status).length,
   }));
 
-  return (
-    <section className="analytics-section">
-      <div className="analytics-header">
-        <div>
-          <h2>Risk Analytics</h2>
-          <p>Overview of analyzed transactions and investigation status</p>
-        </div>
+  // ================================
+  // Analytics KPI calculations
+  // ================================
 
-        <span className="analytics-count">
+  const averageRiskScore =
+      alerts.length > 0
+          ? alerts.reduce((sum, alert) => sum + alert.riskScore, 0) /
+          alerts.length
+          : 0;
+
+  const highRiskCount = alerts.filter(
+      (alert) =>
+          alert.riskLevel === "HIGH" ||
+          alert.riskLevel === "CRITICAL",
+  ).length;
+
+  const highRiskPercentage =
+      alerts.length > 0
+          ? (highRiskCount / alerts.length) * 100
+          : 0;
+
+  const totalTransactionAmount = alerts.reduce(
+      (sum, alert) => sum + alert.amount,
+      0,
+  );
+
+  const averageTransactionAmount =
+      alerts.length > 0
+          ? totalTransactionAmount / alerts.length
+          : 0;
+
+  return (
+      <section className="analytics-section">
+        <div className="analytics-header">
+          <div>
+            <h2>Risk Analytics</h2>
+            <p>
+              Overview of analyzed transactions and investigation status
+            </p>
+          </div>
+
+          <span className="analytics-count">
           {alerts.length} analyzed alerts
         </span>
-      </div>
+        </div>
 
-      <div className="analytics-grid">
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Risk Distribution</h3>
-            <p>Alerts by detected risk level</p>
+        {/* ================================
+          Analytics KPI Cards
+          ================================ */}
+
+        <div className="analytics-kpi-grid">
+          <div className="analytics-kpi-card">
+            <span>Average Risk Score</span>
+            <strong>{averageRiskScore.toFixed(1)}</strong>
           </div>
 
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={riskData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={100}
-                  paddingAngle={3}
-                  label={({ name, value }) =>
-                    value > 0 ? `${name}: ${value}` : ""
-                  }
+          <div className="analytics-kpi-card">
+            <span>High Risk Rate</span>
+            <strong>{highRiskPercentage.toFixed(1)}%</strong>
+          </div>
+
+          <div className="analytics-kpi-card">
+            <span>Total Analyzed Value</span>
+            <strong>
+              $
+              {totalTransactionAmount.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </strong>
+          </div>
+
+          <div className="analytics-kpi-card">
+            <span>Average Analyzed Transaction</span>
+            <strong>
+              $
+              {averageTransactionAmount.toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </strong>
+          </div>
+        </div>
+
+        {/* ================================
+          Charts
+          ================================ */}
+
+        <div className="analytics-grid">
+          <div className="chart-card">
+            <div className="chart-header">
+              <h3>Risk Distribution</h3>
+              <p>Alerts by detected risk level</p>
+            </div>
+
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                      data={riskData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={65}
+                      outerRadius={100}
+                      paddingAngle={3}
+                      label={({ name, value }) =>
+                          value > 0 ? `${name}: ${value}` : ""
+                      }
+                  >
+                    {riskData.map((entry) => (
+                        <Cell
+                            key={entry.name}
+                            fill={getRiskColor(
+                                entry.name as RiskLevel,
+                            )}
+                        />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                      contentStyle={{
+                        background: "#151922",
+                        border: "1px solid #303747",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                      }}
+                  />
+
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="chart-card">
+            <div className="chart-header">
+              <h3>Investigation Status</h3>
+              <p>Current alert workflow state</p>
+            </div>
+
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                    data={statusData}
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: -10,
+                      bottom: 10,
+                    }}
                 >
-                  {riskData.map((entry) => (
-                    <Cell
-                      key={entry.name}
-                      fill={getRiskColor(entry.name as RiskLevel)}
-                    />
-                  ))}
-                </Pie>
+                  <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#282e3c"
+                  />
 
-                <Tooltip
-                  contentStyle={{
-                    background: "#151922",
-                    border: "1px solid #303747",
-                    borderRadius: "8px",
-                    color: "#ffffff",
-                  }}
-                />
+                  <XAxis
+                      dataKey="name"
+                      tick={{
+                        fill: "#8b93a7",
+                        fontSize: 11,
+                      }}
+                  />
 
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+                  <YAxis
+                      allowDecimals={false}
+                      tick={{
+                        fill: "#8b93a7",
+                        fontSize: 11,
+                      }}
+                  />
+
+                  <Tooltip
+                      contentStyle={{
+                        background: "#151922",
+                        border: "1px solid #303747",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                      }}
+                  />
+
+                  <Bar
+                      dataKey="value"
+                      name="Alerts"
+                      fill="#64748b"
+                      radius={[5, 5, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Investigation Status</h3>
-            <p>Current alert workflow state</p>
-          </div>
-
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={statusData}
-                margin={{
-                  top: 10,
-                  right: 10,
-                  left: -10,
-                  bottom: 10,
-                }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#282e3c"
-                />
-
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: "#8b93a7", fontSize: 11 }}
-                />
-
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fill: "#8b93a7", fontSize: 11 }}
-                />
-
-                <Tooltip
-                  contentStyle={{
-                    background: "#151922",
-                    border: "1px solid #303747",
-                    borderRadius: "8px",
-                    color: "#ffffff",
-                  }}
-                />
-
-                <Bar
-                  dataKey="value"
-                  name="Alerts"
-                  fill="#64748b"
-                  radius={[5, 5, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
   );
 }
 
@@ -162,10 +243,13 @@ function getRiskColor(level: RiskLevel): string {
   switch (level) {
     case "LOW":
       return "#22c55e";
+
     case "MEDIUM":
       return "#eab308";
+
     case "HIGH":
       return "#f97316";
+
     case "CRITICAL":
       return "#ef4444";
   }

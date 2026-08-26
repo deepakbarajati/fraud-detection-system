@@ -639,6 +639,45 @@ tr:hover td {
   font-size: 12px;
 }
 
+.analytics-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.analytics-kpi-card {
+  background: #151922;
+  border: 1px solid #282e3c;
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.analytics-kpi-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #8b93a7;
+  font-size: 11px;
+}
+
+.analytics-kpi-card strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .analytics-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .analytics-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
