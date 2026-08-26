@@ -647,6 +647,8 @@ tr:hover td {
 }
 
 .analytics-kpi-card {
+  min-width: 0;
+  overflow: hidden;
   background: #151922;
   border: 1px solid #282e3c;
   border-radius: 10px;
@@ -658,14 +660,20 @@ tr:hover td {
   margin-bottom: 8px;
   color: #8b93a7;
   font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .analytics-kpi-card strong {
   display: block;
+  min-width: 0;
   font-size: 22px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 @media (max-width: 1000px) {
   .analytics-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1051,4 +1059,44 @@ tr:hover td {
 .scenario-buttons button:hover {
   background: #2a3140;
   border-color: #596579;
+}
+
+.table-risk-score {
+  min-width: 70px;
+}
+
+.table-risk-score strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.table-risk-track {
+  width: 70px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #252b38;
+}
+
+.table-risk-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.table-risk-fill.low {
+  background: #22c55e;
+}
+
+.table-risk-fill.medium {
+  background: #eab308;
+}
+
+.table-risk-fill.high {
+  background: #f97316;
+}
+
+.table-risk-fill.critical {
+  background: #ef4444;
 }

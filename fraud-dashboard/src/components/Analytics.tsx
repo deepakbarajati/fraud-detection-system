@@ -115,8 +115,7 @@ function Analytics({ alerts }: AnalyticsProps) {
           </div>
 
           <div className="analytics-kpi-card">
-            <span>Average Analyzed Transaction</span>
-            <strong>
+            <span>Avg. Analyzed Transaction</span>            <strong>
               $
               {averageTransactionAmount.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
