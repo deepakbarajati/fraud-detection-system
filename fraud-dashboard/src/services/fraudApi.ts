@@ -6,7 +6,7 @@ import type {
   RiskLevel,
 } from "../types/fraud";
 
-const API = "http://localhost:8082/api/v1/fraud";
+const API = "http://localhost:8080/api/v1/fraud";
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const response = await fetch(`${API}/dashboard/stats`);

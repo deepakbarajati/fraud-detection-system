@@ -20,7 +20,7 @@ export interface PaymentResponse {
   message: string;
 }
 
-const PAYMENT_API = "http://localhost:8081/api/v1/payments";
+const PAYMENT_API = "http://localhost:8080/api/v1/payments";
 
 export async function createPayment(
   payment: PaymentRequest,
