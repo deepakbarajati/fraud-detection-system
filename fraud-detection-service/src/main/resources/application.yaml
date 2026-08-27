@@ -59,6 +59,7 @@ management:
 kafka:
   topics:
     payment-events: payment-events
+    fraud-alerts: fraud-alerts
 
 services:
   payment-service:

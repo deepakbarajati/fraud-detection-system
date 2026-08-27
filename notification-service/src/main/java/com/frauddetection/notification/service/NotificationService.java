@@ -1,6 +1,7 @@
 package com.frauddetection.notification.service;
 
 import com.frauddetection.notification.dto.NotificationResponseDTO;
+import com.frauddetection.notification.dto.FraudAlertEventDTO;
 import com.frauddetection.notification.dto.PaymentEventDTO;
 import com.frauddetection.notification.model.NotificationRecord;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,55 @@ public class NotificationService {
         // Save audit log to S3
         s3Service.saveAuditLog(record);
         log.info("Audit log saved to S3 for payment: {}", event.getPaymentId());
+    }
+
+    public void processFraudAlert(FraudAlertEventDTO event) {
+        log.warn(
+                "Processing fraud notification | paymentId: {} | riskLevel: {} | riskScore: {}",
+                event.getPaymentId(),
+                event.getRiskLevel(),
+                event.getRiskScore()
+        );
+
+        String message;
+
+        if ("CRITICAL".equalsIgnoreCase(event.getRiskLevel())) {
+            message = "CRITICAL fraud alert detected. Immediate investigation required.";
+        } else if ("HIGH".equalsIgnoreCase(event.getRiskLevel())) {
+            message = "HIGH risk fraud alert detected. Additional review recommended.";
+        } else {
+            message = "Fraud risk alert detected.";
+        }
+
+        NotificationRecord record = NotificationRecord.builder()
+                .paymentId(event.getPaymentId())
+                .senderId(event.getSenderId())
+                .receiverId(event.getReceiverId())
+                .amount(event.getAmount())
+                .currency(event.getCurrency())
+                .ipAddress(event.getIpAddress())
+                .deviceId(event.getDeviceId())
+                .riskLevel(event.getRiskLevel())
+                .status("FRAUD_ALERT")
+                .message(message)
+                .createdAt(event.getCreatedAt())
+                .build();
+
+        String notificationId = dynamoDbService.saveNotification(record);
+
+        log.info(
+                "Fraud notification saved to DynamoDB | notificationId: {} | paymentId: {}",
+                notificationId,
+                event.getPaymentId()
+        );
+
+        s3Service.saveAuditLog(record);
+
+        log.info(
+                "Fraud audit log saved to S3 | paymentId: {} | riskLevel: {}",
+                event.getPaymentId(),
+                event.getRiskLevel()
+        );
     }
 
     public List<NotificationResponseDTO> getNotificationsByPaymentId(

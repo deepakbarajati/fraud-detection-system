@@ -4,11 +4,13 @@ import com.frauddetection.fraud.client.PaymentServiceClient;
 import com.frauddetection.fraud.dto.FraudAlertPageResponseDTO;
 import com.frauddetection.fraud.dto.FraudAlertResponseDTO;
 import com.frauddetection.fraud.dto.FraudDashboardStatsDTO;
+import com.frauddetection.fraud.dto.FraudAlertEventDTO;
 import com.frauddetection.fraud.dto.PaymentEventDTO;
 import com.frauddetection.fraud.dto.RiskAssessmentDTO;
 import com.frauddetection.fraud.model.AlertStatus;
 import com.frauddetection.fraud.model.FraudAlert;
 import com.frauddetection.fraud.model.RiskLevel;
+import com.frauddetection.fraud.kafka.FraudAlertEventProducer;
 import com.frauddetection.fraud.repository.FraudAlertRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class FraudDetectionService {
     private final FraudAlertRepository fraudAlertRepository;
     private final RiskScoringEngine riskScoringEngine;
     private final PaymentServiceClient paymentServiceClient;
+    private final FraudAlertEventProducer fraudAlertEventProducer;
 
     @Transactional
     public void processPaymentEvent(PaymentEventDTO event) {
@@ -63,6 +66,25 @@ public class FraudDetectionService {
                 saved.getId(),
                 saved.getRiskLevel()
         );
+
+        // Publish fraud alert event for Notification Service
+        FraudAlertEventDTO fraudAlertEvent = FraudAlertEventDTO.builder()
+                .alertId(saved.getId())
+                .paymentId(saved.getPaymentId())
+                .senderId(saved.getSenderId())
+                .receiverId(saved.getReceiverId())
+                .amount(saved.getAmount())
+                .currency(saved.getCurrency())
+                .riskScore(saved.getRiskScore())
+                .riskLevel(saved.getRiskLevel())
+                .riskReasons(saved.getRiskReasons())
+                .aiExplanation(saved.getAiExplanation())
+                .ipAddress(saved.getIpAddress())
+                .deviceId(saved.getDeviceId())
+                .createdAt(saved.getCreatedAt())
+                .build();
+
+        fraudAlertEventProducer.publishFraudAlert(fraudAlertEvent);
 
         // Update payment status based on risk level
         if (assessment.getRiskLevel() == RiskLevel.CRITICAL ||

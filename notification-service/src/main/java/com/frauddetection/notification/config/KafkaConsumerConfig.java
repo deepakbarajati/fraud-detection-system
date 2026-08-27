@@ -1,5 +1,6 @@
 package com.frauddetection.notification.config;
 
+import com.frauddetection.notification.dto.FraudAlertEventDTO;
 import com.frauddetection.notification.dto.PaymentEventDTO;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -22,32 +23,127 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    /*
+     * Existing payment-events consumer
+     */
     @Bean
     public ConsumerFactory<String, PaymentEventDTO> consumerFactory() {
+
         JsonDeserializer<PaymentEventDTO> deserializer =
                 new JsonDeserializer<>(PaymentEventDTO.class, false);
+
         deserializer.addTrustedPackages("*");
         deserializer.setUseTypeHeaders(false);
 
         Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                JsonDeserializer.class);
 
-        return new DefaultKafkaConsumerFactory<>(config,
-                new StringDeserializer(), deserializer);
+        config.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                bootstrapServers
+        );
+
+        config.put(
+                ConsumerConfig.GROUP_ID_CONFIG,
+                "notification-group"
+        );
+
+        config.put(
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                "earliest"
+        );
+
+        config.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class
+        );
+
+        config.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                JsonDeserializer.class
+        );
+
+        return new DefaultKafkaConsumerFactory<>(
+                config,
+                new StringDeserializer(),
+                deserializer
+        );
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, PaymentEventDTO>
     kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, PaymentEventDTO> factory =
+
+        ConcurrentKafkaListenerContainerFactory<String, PaymentEventDTO>
+                factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
+
         factory.setConsumerFactory(consumerFactory());
+
+        return factory;
+    }
+
+    /*
+     * Fraud alert consumer
+     */
+    @Bean
+    public ConsumerFactory<String, FraudAlertEventDTO>
+    fraudAlertConsumerFactory() {
+
+        JsonDeserializer<FraudAlertEventDTO> deserializer =
+                new JsonDeserializer<>(
+                        FraudAlertEventDTO.class,
+                        false
+                );
+
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeHeaders(false);
+
+        Map<String, Object> config = new HashMap<>();
+
+        config.put(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                bootstrapServers
+        );
+
+        config.put(
+                ConsumerConfig.GROUP_ID_CONFIG,
+                "fraud-notification-group"
+        );
+
+        config.put(
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+                "earliest"
+        );
+
+        config.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class
+        );
+
+        config.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                JsonDeserializer.class
+        );
+
+        return new DefaultKafkaConsumerFactory<>(
+                config,
+                new StringDeserializer(),
+                deserializer
+        );
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, FraudAlertEventDTO>
+    fraudAlertKafkaListenerContainerFactory() {
+
+        ConcurrentKafkaListenerContainerFactory<String, FraudAlertEventDTO>
+                factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+
+        factory.setConsumerFactory(
+                fraudAlertConsumerFactory()
+        );
+
         return factory;
     }
 }
