@@ -4,9 +4,27 @@ server:
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: false
+
       routes:
+
         - id: payment-service
           uri: http://localhost:8081
           predicates:
@@ -16,6 +34,11 @@ spring:
           uri: http://localhost:8082
           predicates:
             - Path=/api/v1/fraud/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: fraudDetectionCircuitBreaker
+                fallbackUri: forward:/fallback/fraud
 
         - id: notification-service
           uri: http://localhost:8083
@@ -32,6 +55,7 @@ management:
     web:
       exposure:
         include: health,info,metrics,gateway
+
   endpoint:
     gateway:
       enabled: true
