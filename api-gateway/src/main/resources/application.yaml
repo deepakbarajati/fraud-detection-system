@@ -26,12 +26,12 @@ spring:
       routes:
 
         - id: payment-service
-          uri: http://localhost:8081
+          uri: http://payment-service:8081
           predicates:
             - Path=/api/v1/payments/**
 
         - id: fraud-detection-service
-          uri: http://localhost:8082
+          uri: http://fraud-detection-service:8082
           predicates:
             - Path=/api/v1/fraud/**
           filters:
@@ -41,12 +41,12 @@ spring:
                 fallbackUri: forward:/fallback/fraud
 
         - id: notification-service
-          uri: http://localhost:8083
+          uri: http://notification-service:8083
           predicates:
             - Path=/api/v1/notifications/**
 
         - id: ai-reasoning-service
-          uri: http://localhost:8084
+          uri: http://ai-reasoning-service:8084
           predicates:
             - Path=/api/v1/ai/**
 

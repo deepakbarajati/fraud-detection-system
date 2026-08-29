@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d frauddetection"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,7 +55,7 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 30s
@@ -89,6 +89,128 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: fraud-payment-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/frauddetection
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: fraud-kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  fraud-detection-service:
+    build:
+      context: ./fraud-detection-service
+      dockerfile: Dockerfile
+    container_name: fraud-detection-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/frauddetection
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: fraud-kafka:29092
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: fraud-notification-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: fraud-kafka:29092
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+
+  ai-reasoning-service:
+    build:
+      context: ./ai-reasoning-service
+      dockerfile: Dockerfile
+    container_name: fraud-ai-reasoning-service
+    env_file:
+      - ./ai-reasoning-service/.env
+    environment:
+      PAYMENT_SERVICE_URL: http://payment-service:8081
+      FRAUD_SERVICE_URL: http://fraud-detection-service:8082
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/frauddetection
+    depends_on:
+      postgres:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
+      fraud-detection-service:
+        condition: service_started
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: fraud-api-gateway
+    depends_on:
+      payment-service:
+        condition: service_started
+      fraud-detection-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      ai-reasoning-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  fraud-dashboard:
+    build:
+      context: ./fraud-dashboard
+      dockerfile: Dockerfile
+    container_name: fraud-dashboard
+    depends_on:
+      api-gateway:
+        condition: service_started
+    ports:
+      - "5173:80"
+    restart: unless-stopped
 
 volumes:
   postgres-data:

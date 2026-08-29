@@ -43,8 +43,8 @@ aws:
   region: us-east-1
   dynamodb:
     table-name: fraud-notifications
-    endpoint: http://localhost:4566
+    endpoint: http://localstack:4566
   s3:
     bucket-name: fraud-audit-logs
-    endpoint: http://localhost:4566
+    endpoint: http://localstack:4566
   use-local: true

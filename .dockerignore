@@ -1,0 +1,13 @@
+.git
+.gitignore
+.idea
+**/.idea
+**/target
+**/node_modules
+**/dist
+**/venv
+**/__pycache__
+**/*.pyc
+*.log
+.env
+**/.env
